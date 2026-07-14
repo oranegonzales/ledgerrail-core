@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ledgerrail-core
+    runtime: docker
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USERNAME
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: PORTFOLIO_API_KEY
+        generateValue: true
+      - key: JAVA_TOOL_OPTIONS
+        value: -Xms64m -Xmx256m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=48m -XX:+UseSerialGC

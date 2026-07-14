@@ -1,0 +1,35 @@
+name: ledgerrail
+
+services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ledgerrail}
+      POSTGRES_USER: ${POSTGRES_USER:-ledgerrail}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-development-password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ledgerrail-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ledgerrail} -d ${POSTGRES_DB:-ledgerrail}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: jdbc:postgresql://database:5432/${POSTGRES_DB:-ledgerrail}
+      DATABASE_USERNAME: ${POSTGRES_USER:-ledgerrail}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-local-development-password}
+      PORTFOLIO_API_KEY: ${PORTFOLIO_API_KEY:-local-development-key}
+    ports:
+      - "8080:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  ledgerrail-postgres:

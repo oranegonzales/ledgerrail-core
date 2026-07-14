@@ -1,0 +1,48 @@
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+
+spring:
+  application:
+    name: ledgerrail-core
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/ledgerrail}
+    username: ${DATABASE_USERNAME:ledgerrail}
+    password: ${DATABASE_PASSWORD:local-development-password}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 0
+      connection-timeout: 5000
+      idle-timeout: 60000
+  flyway:
+    enabled: true
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: LedgerRail Core
+    version: 0.1.0
+    description: Sandbox transaction and ledger API
+
+ledgerrail:
+  security:
+    api-key: ${PORTFOLIO_API_KEY:local-development-key}
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level correlationId=%X{correlationId:-none} %logger{36} - %msg%n"
