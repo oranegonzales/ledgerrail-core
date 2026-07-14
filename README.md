@@ -1,8 +1,18 @@
 # LedgerRail Core
 
+[![CI](https://github.com/oranegonzales/ledgerrail-core/actions/workflows/ci.yml/badge.svg)](https://github.com/oranegonzales/ledgerrail-core/actions/workflows/ci.yml)
+
 LedgerRail Core is a sandbox payment API built to demonstrate reliable Java backend engineering. It creates simulated pay-ins and pay-outs, records an atomic two-entry ledger, protects retries with idempotency keys, and writes integration events to a transactional outbox.
 
 The project never moves real money and must only use synthetic data.
+
+## Live deployment
+
+- API overview: [ledgerrail-core.onrender.com](https://ledgerrail-core.onrender.com/)
+- Health: [ledgerrail-core.onrender.com/actuator/health](https://ledgerrail-core.onrender.com/actuator/health)
+- Source: [github.com/oranegonzales/ledgerrail-core](https://github.com/oranegonzales/ledgerrail-core)
+
+Protected API endpoints require a private portfolio key that is not published. The Render Free instance can take about one minute to wake after inactivity.
 
 ## Current milestone
 
@@ -72,6 +82,16 @@ Every `/api/` request requires `X-Portfolio-Key`.
 | `GET` | `/api/v1/transfers/{id}/ledger-entries` | Retrieve debit and credit entries |
 | `GET` | `/actuator/health` | Read public health status |
 | `GET` | `/actuator/prometheus` | Read Prometheus metrics |
+
+## Verified live behavior
+
+The Render and Neon deployment was smoke-tested on July 14, 2026:
+
+- A new pay-in returned HTTP 201 with status `COMPLETED`.
+- Repeating the same request returned HTTP 200 and `Idempotency-Replayed: true` with the original transfer ID.
+- The transfer produced exactly one debit and one credit for the same amount and currency.
+- Requests without the portfolio API key returned HTTP 401.
+- The public health endpoint returned `UP`.
 
 ## Test
 
