@@ -30,15 +30,17 @@ The public demo should be described as a cloud-deployed portfolio sandbox, not a
 
 1. Create a Neon Free project named `ledgerrail`.
 2. Keep the default root branch for the deployed demo.
-3. Copy the pooled connection details.
+3. Open the Connect dialog and disable Connection pooling.
 4. Keep the hostname, database, username, and password private.
 5. Use an SSL-enabled JDBC URL in this format:
 
 ```text
-jdbc:postgresql://YOUR-NEON-POOLER-HOST/YOUR-DATABASE?sslmode=require
+jdbc:postgresql://YOUR-NEON-HOST/YOUR-DATABASE?sslmode=require
 ```
 
 Flyway creates the schema when the API starts.
+
+The direct connection is intentional for version 0.1.0 because Flyway and the application share one datasource. HikariCP limits the service to five connections, which is appropriate for a single free Render instance. A later milestone can separate Flyway onto a direct connection and use Neon's pooled hostname for application traffic.
 
 ## Deploy to Render
 
