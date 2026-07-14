@@ -16,6 +16,20 @@ spring:
       idle-timeout: 60000
   flyway:
     enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+        sasl.mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
+        sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
+        ssl.truststore.type: ${KAFKA_SSL_TRUSTSTORE_TYPE:PEM}
+        ssl.truststore.location: ${KAFKA_SSL_TRUSTSTORE_LOCATION:}
   lifecycle:
     timeout-per-shutdown-phase: 20s
 
@@ -36,12 +50,23 @@ management:
 info:
   app:
     name: LedgerRail Core
-    version: 0.1.0
+    version: 0.2.0
     description: Sandbox transaction and ledger API
 
 ledgerrail:
   security:
     api-key: ${PORTFOLIO_API_KEY:local-development-key}
+  kafka:
+    enabled: ${KAFKA_ENABLED:false}
+    topic: ${KAFKA_TOPIC:transfer.completed.v1}
+    batch-size: 20
+    max-attempts: 8
+    poll-interval-ms: 2000
+    initial-delay-ms: 5000
+    send-timeout: 10s
+    lease-timeout: 5m
+    initial-backoff: 2s
+    max-backoff: 5m
 
 logging:
   pattern:

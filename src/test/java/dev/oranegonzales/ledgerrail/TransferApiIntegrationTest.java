@@ -3,6 +3,7 @@ package dev.oranegonzales.ledgerrail;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -122,7 +123,21 @@ class TransferApiIntegrationTest {
     @Test
     void requiresPortfolioApiKey() throws Exception {
         mockMvc.perform(get("/api/v1/transfers").param("accountId", UUID.randomUUID().toString()))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(header().string("X-Frame-Options", "DENY"));
+    }
+
+    @Test
+    void servesPublicDashboardAndApiMetadata() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("LedgerRail Core")))
+                .andExpect(header().string("X-Frame-Options", "DENY"));
+
+        mockMvc.perform(get("/api-info"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("LedgerRail Core"));
     }
 
     private String request(UUID accountId, String type, String amount, String currency) {
