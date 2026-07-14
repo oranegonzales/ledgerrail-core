@@ -1,4 +1,4 @@
-package dev.rayongreen.ledgerrail.transfer;
+package dev.oranegonzales.ledgerrail.transfer;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
