@@ -8,12 +8,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class HomeController {
 
-    @GetMapping("/")
+    @GetMapping("/api-info")
     public Map<String, Object> home() {
         return Map.of(
                 "name", "LedgerRail Core",
                 "description", "A portfolio sandbox for reliable pay-in and pay-out processing",
-                "version", "0.1.0",
+                "version", "0.2.0",
                 "status", "sandbox",
                 "health", "/actuator/health",
                 "endpoints", List.of(

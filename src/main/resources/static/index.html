@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="LedgerRail Core is a live payment reliability sandbox built with Java, PostgreSQL, and Kafka.">
+    <title>LedgerRail Core | Payment Reliability Sandbox</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="#top" aria-label="LedgerRail home">
+            <span class="brand-mark">LR</span>
+            <span>LedgerRail Core</span>
+        </a>
+        <nav aria-label="Primary navigation">
+            <a href="#architecture">Architecture</a>
+            <a href="#lab">API Lab</a>
+            <a href="https://github.com/oranegonzales/ledgerrail-core" rel="noreferrer">GitHub</a>
+        </nav>
+    </header>
+
+    <main id="top">
+        <section class="hero shell">
+            <div class="hero-copy">
+                <p class="eyebrow">LIVE PAYMENT RELIABILITY SANDBOX</p>
+                <h1>Money movement designed to survive retries, failures, and scrutiny.</h1>
+                <p class="hero-summary">A Java 21 service demonstrating idempotent transfers, atomic double-entry accounting, transactional outbox delivery, and production-minded operations.</p>
+                <div class="hero-actions">
+                    <a class="button primary" href="#lab">Open the API lab</a>
+                    <a class="button secondary" href="/api-info">View API metadata</a>
+                </div>
+            </div>
+            <aside class="system-card" aria-label="Live system status">
+                <div class="status-row">
+                    <span class="status-dot" id="status-dot"></span>
+                    <span id="system-status">Checking live system</span>
+                </div>
+                <dl>
+                    <div><dt>Runtime</dt><dd>Java 21</dd></div>
+                    <div><dt>Region</dt><dd>Virginia</dd></div>
+                    <div><dt>Database</dt><dd>Neon PostgreSQL</dd></div>
+                    <div><dt>Delivery</dt><dd>Transactional outbox</dd></div>
+                </dl>
+                <p id="health-detail" class="health-detail" aria-live="polite">Contacting the health endpoint.</p>
+            </aside>
+        </section>
+
+        <section class="proof-strip" aria-label="Engineering guarantees">
+            <div><strong>01</strong><span>Idempotent writes</span><p>Safe client retries return the original transfer.</p></div>
+            <div><strong>02</strong><span>Atomic ledger</span><p>Debit, credit, transfer, and event commit together.</p></div>
+            <div><strong>03</strong><span>Observable runtime</span><p>Health, metrics, and correlation IDs are built in.</p></div>
+        </section>
+
+        <section id="architecture" class="section shell">
+            <div class="section-heading">
+                <p class="eyebrow">SYSTEM DESIGN</p>
+                <h2>PostgreSQL owns the truth. Kafka moves the facts.</h2>
+                <p>The outbox closes the failure gap between committing financial state and publishing integration events.</p>
+            </div>
+            <div class="architecture-grid">
+                <article class="architecture-node"><span>01</span><h3>Web and mobile clients</h3><p>Submit a transfer with a unique idempotency key.</p></article>
+                <div class="flow-arrow" aria-hidden="true">→</div>
+                <article class="architecture-node active"><span>02</span><h3>Spring Boot API</h3><p>Validates input and executes the transfer boundary.</p></article>
+                <div class="flow-arrow" aria-hidden="true">→</div>
+                <article class="architecture-node"><span>03</span><h3>Neon PostgreSQL</h3><p>Commits the transfer, ledger, and outbox atomically.</p></article>
+                <div class="flow-arrow" aria-hidden="true">→</div>
+                <article class="architecture-node"><span>04</span><h3>Aiven Kafka</h3><p>Optional managed event transport for independent consumers.</p></article>
+            </div>
+        </section>
+
+        <section id="lab" class="section lab-section">
+            <div class="shell lab-layout">
+                <div class="section-heading">
+                    <p class="eyebrow">INTERACTIVE API LAB</p>
+                    <h2>Exercise the live transfer path.</h2>
+                    <p>The key stays in this browser tab only. It is never stored in local storage or included in the site source.</p>
+                    <div class="security-note"><span>Private operator access</span><p>Recruiters can inspect the public system and source without receiving a write credential.</p></div>
+                </div>
+                <form id="transfer-form" class="lab-card">
+                    <label for="api-key">Portfolio API key</label>
+                    <input id="api-key" name="api-key" type="password" autocomplete="current-password" spellcheck="false" placeholder="Enter the private Render key">
+
+                    <label for="account-id">Synthetic account ID</label>
+                    <div class="input-action">
+                        <input id="account-id" name="account-id" type="text" required spellcheck="false">
+                        <button id="new-account" type="button" class="text-button">New ID</button>
+                    </div>
+
+                    <div class="field-grid">
+                        <div><label for="transfer-type">Transfer type</label><select id="transfer-type" name="transfer-type"><option value="PAY_IN">Pay in</option><option value="PAY_OUT">Pay out</option></select></div>
+                        <div><label for="amount">Amount</label><input id="amount" name="amount" type="number" min="0.01" step="0.01" value="125.50" required></div>
+                        <div><label for="currency">Currency</label><input id="currency" name="currency" type="text" minlength="3" maxlength="3" value="JMD" required></div>
+                    </div>
+
+                    <div class="lab-actions">
+                        <button class="button primary" type="submit">Create transfer</button>
+                        <button class="button secondary" id="replay-request" type="button" disabled>Replay same request</button>
+                    </div>
+                    <p id="lab-message" class="lab-message" aria-live="polite">Ready for a synthetic transfer.</p>
+                </form>
+            </div>
+        </section>
+
+        <section class="section shell results-section" aria-live="polite">
+            <div class="result-heading"><div><p class="eyebrow">LATEST RESPONSE</p><h2>Request evidence</h2></div><div class="response-badges"><span id="response-status">No request</span><span id="replay-status">Replay unknown</span></div></div>
+            <pre id="response-output">Submit a transfer to inspect the response.</pre>
+            <div class="ledger-panel">
+                <h3>Ledger entries</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th scope="col">Account</th><th scope="col">Entry</th><th scope="col">Amount</th><th scope="col">Currency</th></tr></thead>
+                        <tbody id="ledger-body"><tr><td colspan="4">No ledger entries loaded.</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="shell"><span>LedgerRail Core</span><span>Synthetic data only</span><a href="https://github.com/oranegonzales/ledgerrail-core" rel="noreferrer">Source and engineering decisions</a></div>
+    </footer>
+</body>
+</html>

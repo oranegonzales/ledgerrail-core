@@ -15,5 +15,7 @@ services:
         sync: false
       - key: PORTFOLIO_API_KEY
         generateValue: true
+      - key: KAFKA_ENABLED
+        value: "false"
       - key: JAVA_TOOL_OPTIONS
         value: -Xms64m -Xmx256m -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=48m -XX:+UseSerialGC
