@@ -47,7 +47,7 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 class OutboxPublisherIntegrationTest {
 
-    private static final String API_KEY = "integration-test-api-key";
+    private static final String API_KEY = "integration-test-api-key-0000000001";
     private static final String TOPIC = "transfer.completed.v1";
 
     @Container

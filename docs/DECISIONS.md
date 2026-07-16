@@ -8,7 +8,7 @@ Transfers and ledger entries are committed in PostgreSQL. Kafka can distribute e
 
 A pay-in debits the platform clearing account and credits the sandbox user account. A pay-out debits the sandbox user account and credits the platform clearing account. Both entries use the same transfer identifier, amount, currency, and commit boundary.
 
-Version 0.1 does not enforce account balances. Balance reservations and insufficient-funds handling belong to the asynchronous workflow milestone.
+The current sandbox does not enforce account balances. Balance reservations and insufficient-funds handling remain outside this synthetic reliability demo.
 
 ## Money uses decimal storage
 
@@ -20,7 +20,7 @@ The database has a unique constraint on `account_id` and `idempotency_key`. Repe
 
 ## Events begin in a transactional outbox
 
-The transfer, two ledger entries, and outbox event commit in the same transaction. A later publisher will send pending outbox records to Kafka and mark them published only after broker acknowledgement.
+The transfer, two ledger entries, and outbox event commit in the same transaction. When Kafka is enabled, the publisher claims pending records, sends them, and marks them published only after broker acknowledgement.
 
 ## Free hosting is separated by responsibility
 
@@ -29,6 +29,10 @@ Render runs the API and Neon stores PostgreSQL data. The public deployment delib
 ## The public deployment is a sandbox
 
 Synthetic transfer endpoints are anonymous so a recruiter can use the website or Android client immediately. Public requests pass through a per-client minute limit, while each anonymous POST atomically consumes a PostgreSQL-backed daily quota that survives application restarts. Supplying a valid portfolio key bypasses those demo quotas; recovery and reconciliation operator endpoints always require it. This is deliberate sandbox access control, not end-user authentication.
+
+The Render deployment explicitly trusts its proxy-appended `X-Forwarded-For` value and reads the rightmost address so a client-supplied prefix cannot bypass the minute limit. Direct and local deployments ignore forwarded addresses by default. Prometheus, reconciliation, and recovery routes share the operator-key boundary.
+
+Account-history reads and request bodies are bounded, JSON rejects unknown or trailing values, response locations are relative rather than derived from proxy headers, and correlation IDs accept only a small log-safe character set. Actuator endpoints are private by default, with only health probes and basic application info explicitly public.
 
 ## Reconciliation treats PostgreSQL as authoritative
 

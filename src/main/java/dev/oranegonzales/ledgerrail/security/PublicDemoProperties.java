@@ -9,5 +9,6 @@ import org.springframework.validation.annotation.Validated;
 public record PublicDemoProperties(
         boolean enabled,
         @Min(1) int requestsPerMinute,
-        @Min(1) int writesPerDay) {
+        @Min(1) int writesPerDay,
+        boolean trustForwardedFor) {
 }

@@ -70,11 +70,12 @@ The direct connection is intentional because Flyway and the application share on
 | `PUBLIC_DEMO_ENABLED` | `true` to allow anonymous synthetic transfer endpoints |
 | `PUBLIC_DEMO_REQUESTS_PER_MINUTE` | Optional per-client limit; defaults to `60` |
 | `PUBLIC_DEMO_WRITES_PER_DAY` | Optional persistent global limit; defaults to `500` |
+| `PUBLIC_DEMO_TRUST_FORWARDED_FOR` | `true` only behind Render's trusted proxy; direct/local deployments default to `false` |
 
 5. Deploy and wait for `/actuator/health` to return `UP`.
 6. Open the Render-generated URL and confirm the LedgerRail dashboard appears.
 
-Do not place database credentials, the portfolio API key, or future broker credentials in GitHub.
+`PORTFOLIO_API_KEY` is required at startup and must contain a random value between 32 and 256 characters. Do not place database credentials, the portfolio API key, or future broker credentials in GitHub.
 
 ## Add a custom domain later
 
@@ -84,4 +85,4 @@ Render supplies a public `onrender.com` address and managed TLS. A custom domain
 
 The public Render service does not connect to a managed Kafka provider. The providers evaluated for this portfolio exposed time-limited credits rather than a dependable ongoing free environment, and running Kafka inside Render's 512 MB container would be unreliable.
 
-Version 0.3.0 includes the broker-neutral outbox publisher, producer acknowledgements, bounded retries, stale-claim recovery, terminal failure state, event-ID de-duplication, and reconciliation. `KAFKA_ENABLED=false` and `KAFKA_CONSUMER_ENABLED=false` keep both Kafka components inactive on Render. The CI workflow runs `mvn verify`, starts PostgreSQL and Apache Kafka containers, and proves the complete delivery and reconciliation path. See [`KAFKA.md`](KAFKA.md) for the delivery model and optional configuration contract.
+Version 0.4.0 includes the broker-neutral outbox publisher, producer acknowledgements, bounded retries, stale-claim recovery, terminal failure state, event-ID de-duplication, and reconciliation. `KAFKA_ENABLED=false` and `KAFKA_CONSUMER_ENABLED=false` keep both Kafka components inactive on Render. The CI workflow runs `mvn verify`, starts PostgreSQL and Apache Kafka containers, and proves the complete delivery and reconciliation path. See [`KAFKA.md`](KAFKA.md) for the delivery model and optional configuration contract.

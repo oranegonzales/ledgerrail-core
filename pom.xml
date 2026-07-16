@@ -9,7 +9,7 @@
     </parent>
     <groupId>dev.oranegonzales</groupId>
     <artifactId>ledgerrail-core</artifactId>
-    <version>0.3.0-SNAPSHOT</version>
+    <version>0.4.0-SNAPSHOT</version>
     <name>LedgerRail Core</name>
     <description>Event-driven payment sandbox portfolio project</description>
     <properties>
