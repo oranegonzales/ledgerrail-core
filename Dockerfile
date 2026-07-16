@@ -5,7 +5,7 @@ RUN mvn -B dependency:go-offline
 COPY src src
 RUN mvn -B -DskipTests package
 
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:25-jre-jammy
 RUN groupadd --system ledgerrail && useradd --system --gid ledgerrail ledgerrail
 WORKDIR /app
 COPY --from=build /workspace/target/ledgerrail-core-*.jar app.jar
