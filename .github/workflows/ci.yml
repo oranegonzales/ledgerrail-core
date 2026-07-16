@@ -23,8 +23,6 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
-      - name: Verify Prometheus dependency
-        run: mvn -B dependency:tree -Dincludes=io.micrometer:micrometer-registry-prometheus
       - run: mvn -B verify
 
   container:
