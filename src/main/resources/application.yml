@@ -61,6 +61,10 @@ spring:
     timeout-per-shutdown-phase: 20s
 
 management:
+  prometheus:
+    metrics:
+      export:
+        enabled: true
   endpoints:
     web:
       exposure:
