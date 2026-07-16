@@ -1,6 +1,7 @@
 package dev.oranegonzales.ledgerrail.outbox;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -12,9 +13,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +27,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -35,6 +40,7 @@ import org.testcontainers.utility.DockerImageName;
 
 @SpringBootTest(properties = {
         "ledgerrail.kafka.enabled=true",
+        "ledgerrail.kafka.consumer-enabled=true",
         "ledgerrail.kafka.initial-delay-ms=3600000"
 })
 @AutoConfigureMockMvc
@@ -73,9 +79,18 @@ class OutboxPublisherIntegrationTest {
     @Autowired
     OutboxPublisher publisher;
 
+    @Autowired
+    KafkaTemplate<String, String> kafkaTemplate;
+
+    @Autowired
+    MeterRegistry meterRegistry;
+
     @BeforeEach
     void cleanDatabase() {
-        jdbcTemplate.execute("TRUNCATE TABLE outbox_events, ledger_entries, transfers CASCADE");
+        jdbcTemplate.execute("""
+                TRUNCATE TABLE reconciliation_results, demo_usage_daily,
+                               outbox_events, ledger_entries, transfers CASCADE
+                """);
     }
 
     @Test
@@ -121,6 +136,29 @@ class OutboxPublisherIntegrationTest {
         assertThat(delivery.get("attempts")).isEqualTo(1);
         assertThat(delivery.get("published_at")).isNotNull();
         assertThat(delivery.get("last_error")).isNull();
+
+        await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
+            Map<String, Object> reconciliation = jdbcTemplate.queryForMap("""
+                    SELECT outcome, detail
+                    FROM reconciliation_results
+                    WHERE event_id = ?::uuid
+                    """, payload.get("eventId").asText());
+            assertThat(reconciliation.get("outcome")).isEqualTo("MATCHED");
+            assertThat(reconciliation.get("detail"))
+                    .isEqualTo("Transfer, ledger, payload, and outbox agree");
+        });
+
+        ProducerRecord<String, String> duplicate = new ProducerRecord<>(TOPIC, transferId, record.value());
+        record.headers().forEach(header -> duplicate.headers().add(header.key(), header.value()));
+        kafkaTemplate.send(duplicate).get(10, TimeUnit.SECONDS);
+
+        await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
+            Integer reconciliationCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM reconciliation_results", Integer.class);
+            assertThat(reconciliationCount).isEqualTo(1);
+            assertThat(meterRegistry.get("ledgerrail.reconciliation.events")
+                    .tag("outcome", "duplicate").counter().count()).isGreaterThanOrEqualTo(1.0);
+        });
     }
 
     private ConsumerRecord<String, String> consumeOne() {

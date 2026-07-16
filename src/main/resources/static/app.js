@@ -7,7 +7,6 @@ const elements = {
     systemStatus: document.getElementById("system-status"),
     healthDetail: document.getElementById("health-detail"),
     form: document.getElementById("transfer-form"),
-    apiKey: document.getElementById("api-key"),
     accountId: document.getElementById("account-id"),
     transferType: document.getElementById("transfer-type"),
     amount: document.getElementById("amount"),
@@ -105,9 +104,9 @@ function showLedger(entries) {
     })
 }
 
-async function loadLedger(transferId, apiKey) {
+async function loadLedger(transferId) {
     const response = await fetch(`/api/v1/transfers/${encodeURIComponent(transferId)}/ledger-entries`, {
-        headers: {"X-Portfolio-Key": apiKey, Accept: "application/json"}
+        headers: {Accept: "application/json"}
     })
     if (!response.ok) {
         throw new Error(`Ledger request failed with HTTP ${response.status}`)
@@ -116,12 +115,6 @@ async function loadLedger(transferId, apiKey) {
 }
 
 async function sendTransfer(replay) {
-    const apiKey = elements.apiKey.value
-    if (!apiKey) {
-        elements.labMessage.textContent = "Enter the private portfolio API key."
-        elements.apiKey.focus()
-        return
-    }
     if (!elements.form.reportValidity()) {
         return
     }
@@ -138,7 +131,6 @@ async function sendTransfer(replay) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-Portfolio-Key": apiKey,
                 "Idempotency-Key": state.request.idempotencyKey
             },
             body: JSON.stringify(state.request.body)
@@ -156,7 +148,7 @@ async function sendTransfer(replay) {
             throw new Error(payload.detail || `Request failed with HTTP ${response.status}`)
         }
         elements.labMessage.textContent = replayed === "true" ? "Original transfer returned safely." : "New transfer committed."
-        await loadLedger(payload.id, apiKey)
+        await loadLedger(payload.id)
     } catch (error) {
         elements.labMessage.textContent = error.message
     } finally {

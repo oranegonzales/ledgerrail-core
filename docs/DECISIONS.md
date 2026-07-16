@@ -2,7 +2,7 @@
 
 ## PostgreSQL is the system of record
 
-Transfers and ledger entries are committed in PostgreSQL. Kafka will distribute events but will not replace the authoritative ledger. This keeps financial state changes inside database transactions with explicit constraints.
+Transfers and ledger entries are committed in PostgreSQL. Kafka can distribute events but does not replace the authoritative ledger. This keeps financial state changes inside database transactions with explicit constraints.
 
 ## Every transfer produces two ledger entries
 
@@ -24,8 +24,12 @@ The transfer, two ledger entries, and outbox event commit in the same transactio
 
 ## Free hosting is separated by responsibility
 
-Render runs the API, Neon stores PostgreSQL data, and Aiven will provide Kafka. This arrangement fits free-tier memory limits and avoids running a database or broker on temporary container storage.
+Render runs the API and Neon stores PostgreSQL data. The public deployment deliberately has no managed Kafka dependency because the available broker offer was time-limited and running a broker in Render's small, temporary container would be unreliable. GitHub Actions verifies the broker-neutral Kafka adapter against an ephemeral Testcontainer instead.
 
 ## The public deployment is a sandbox
 
-Every `/api/` endpoint requires a portfolio API key. The key is a basic abuse-control mechanism for a synthetic-data demo, not a replacement for user authentication or authorization.
+Synthetic transfer endpoints are anonymous so a recruiter can use the website or Android client immediately. Public requests pass through a per-client minute limit, while each anonymous POST atomically consumes a PostgreSQL-backed daily quota that survives application restarts. Supplying a valid portfolio key bypasses those demo quotas; recovery and reconciliation operator endpoints always require it. This is deliberate sandbox access control, not end-user authentication.
+
+## Reconciliation treats PostgreSQL as authoritative
+
+The Kafka consumer stores each `event_id` before comparing the event payload with the transfer, its exact debit and credit, and its originating outbox row. A duplicate event is acknowledged without repeating reconciliation. Differences are persisted for operator inspection and counted in Prometheus instead of silently changing financial state.

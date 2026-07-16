@@ -19,10 +19,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class PortfolioApiKeyFilter extends OncePerRequestFilter {
 
     private static final String HEADER = "X-Portfolio-Key";
+    static final String PUBLIC_DEMO_REQUEST = PortfolioApiKeyFilter.class.getName() + ".publicDemoRequest";
     private final byte[] expectedApiKey;
+    private final PublicDemoProperties publicDemoProperties;
 
-    public PortfolioApiKeyFilter(@Value("${ledgerrail.security.api-key}") String apiKey) {
+    public PortfolioApiKeyFilter(
+            @Value("${ledgerrail.security.api-key}") String apiKey,
+            PublicDemoProperties publicDemoProperties) {
         this.expectedApiKey = apiKey.getBytes(StandardCharsets.UTF_8);
+        this.publicDemoProperties = publicDemoProperties;
     }
 
     @Override
@@ -36,15 +41,34 @@ public class PortfolioApiKeyFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
         String supplied = request.getHeader(HEADER);
-        byte[] suppliedBytes = supplied == null
-                ? new byte[0]
-                : supplied.getBytes(StandardCharsets.UTF_8);
-        if (!MessageDigest.isEqual(expectedApiKey, suppliedBytes)) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-            response.getWriter().write("{\"title\":\"Unauthorized\",\"status\":401,\"detail\":\"A valid X-Portfolio-Key header is required.\"}");
+        if (supplied != null && !supplied.isBlank()) {
+            byte[] suppliedBytes = supplied.getBytes(StandardCharsets.UTF_8);
+            if (!MessageDigest.isEqual(expectedApiKey, suppliedBytes)) {
+                unauthorized(response, "The supplied X-Portfolio-Key is invalid.");
+                return;
+            }
+            filterChain.doFilter(request, response);
             return;
         }
-        filterChain.doFilter(request, response);
+
+        if (publicDemoProperties.enabled() && isPublicDemoRoute(request)) {
+            request.setAttribute(PUBLIC_DEMO_REQUEST, Boolean.TRUE);
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        unauthorized(response, "A valid X-Portfolio-Key header is required for operator endpoints.");
+    }
+
+    private boolean isPublicDemoRoute(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.equals("/api/v1/transfers") || path.startsWith("/api/v1/transfers/");
+    }
+
+    private void unauthorized(HttpServletResponse response, String detail) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        response.getWriter().write("{\"title\":\"Unauthorized\",\"status\":401,\"detail\":\"%s\"}"
+                .formatted(detail));
     }
 }

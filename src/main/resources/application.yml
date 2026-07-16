@@ -30,6 +30,13 @@ spring:
         sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:}
         ssl.truststore.type: ${KAFKA_SSL_TRUSTSTORE_TYPE:PEM}
         ssl.truststore.location: ${KAFKA_SSL_TRUSTSTORE_LOCATION:}
+    consumer:
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    listener:
+      ack-mode: record
   lifecycle:
     timeout-per-shutdown-phase: 20s
 
@@ -50,14 +57,20 @@ management:
 info:
   app:
     name: LedgerRail Core
-    version: 0.2.0
+    version: 0.3.0
     description: Sandbox transaction and ledger API
 
 ledgerrail:
   security:
     api-key: ${PORTFOLIO_API_KEY:local-development-key}
+    public-demo:
+      enabled: ${PUBLIC_DEMO_ENABLED:true}
+      requests-per-minute: ${PUBLIC_DEMO_REQUESTS_PER_MINUTE:60}
+      writes-per-day: ${PUBLIC_DEMO_WRITES_PER_DAY:500}
   kafka:
     enabled: ${KAFKA_ENABLED:false}
+    consumer-enabled: ${KAFKA_CONSUMER_ENABLED:false}
+    consumer-group: ${KAFKA_CONSUMER_GROUP:ledgerrail-reconciliation-v1}
     topic: ${KAFKA_TOPIC:transfer.completed.v1}
     batch-size: 20
     max-attempts: 8

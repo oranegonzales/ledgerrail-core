@@ -1,5 +1,6 @@
 package dev.oranegonzales.ledgerrail.transfer;
 
+import dev.oranegonzales.ledgerrail.outbox.OutboxReplayNotAllowedException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,11 @@ public class ApiProblemHandler {
     @ExceptionHandler(InvalidIdempotencyKeyException.class)
     ResponseEntity<ProblemDetail> invalidIdempotencyKey(InvalidIdempotencyKeyException exception) {
         return problem(HttpStatus.BAD_REQUEST, "Invalid idempotency key", exception.getMessage());
+    }
+
+    @ExceptionHandler(OutboxReplayNotAllowedException.class)
+    ResponseEntity<ProblemDetail> replayNotAllowed(OutboxReplayNotAllowedException exception) {
+        return problem(HttpStatus.CONFLICT, "Outbox replay rejected", exception.getMessage());
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
