@@ -56,8 +56,8 @@
         <section id="architecture" class="section shell">
             <div class="section-heading">
                 <p class="eyebrow">SYSTEM DESIGN</p>
-                <h2>PostgreSQL owns the truth. Kafka moves the facts.</h2>
-                <p>The outbox closes the failure gap between committing financial state and publishing integration events.</p>
+                <h2>PostgreSQL owns the truth. The outbox makes events portable.</h2>
+                <p>The outbox closes the failure gap between committing financial state and publishing integration events. Kafka delivery is broker-neutral, CI-verified, and intentionally off in this free public demo.</p>
             </div>
             <div class="architecture-grid">
                 <article class="architecture-node"><span>01</span><h3>Web and mobile clients</h3><p>Submit a transfer with a unique idempotency key.</p></article>
@@ -66,7 +66,7 @@
                 <div class="flow-arrow" aria-hidden="true">→</div>
                 <article class="architecture-node"><span>03</span><h3>Neon PostgreSQL</h3><p>Commits the transfer, ledger, and outbox atomically.</p></article>
                 <div class="flow-arrow" aria-hidden="true">→</div>
-                <article class="architecture-node"><span>04</span><h3>Aiven Kafka</h3><p>Optional managed event transport for independent consumers.</p></article>
+                <article class="architecture-node"><span>04</span><h3>Kafka publisher</h3><p>Verified with disposable Kafka in CI; optional in a hosted environment.</p></article>
             </div>
         </section>
 
@@ -75,13 +75,10 @@
                 <div class="section-heading">
                     <p class="eyebrow">INTERACTIVE API LAB</p>
                     <h2>Exercise the live transfer path.</h2>
-                    <p>The key stays in this browser tab only. It is never stored in local storage or included in the site source.</p>
-                    <div class="security-note"><span>Private operator access</span><p>Recruiters can inspect the public system and source without receiving a write credential.</p></div>
+                    <p>No account or API key is required. Every transfer is synthetic and the public path is protected by burst and daily write limits.</p>
+                    <div class="security-note"><span>Safe public demo</span><p>Operator and recovery endpoints remain private while this lab is immediately usable.</p></div>
                 </div>
                 <form id="transfer-form" class="lab-card">
-                    <label for="api-key">Portfolio API key</label>
-                    <input id="api-key" name="api-key" type="password" autocomplete="current-password" spellcheck="false" placeholder="Enter the private Render key">
-
                     <label for="account-id">Synthetic account ID</label>
                     <div class="input-action">
                         <input id="account-id" name="account-id" type="text" required spellcheck="false">
