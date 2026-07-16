@@ -27,6 +27,7 @@ public class PublicDemoRateLimitFilter extends OncePerRequestFilter {
     private static final int MAX_TRACKED_CLIENTS = 10_000;
     private final PublicDemoProperties properties;
     private final DemoUsageRepository usageRepository;
+    private final ClientAddressResolver clientAddressResolver;
     private final Clock clock;
     private final Map<String, RequestWindow> clientWindows = new HashMap<>();
     private final Counter acceptedCounter;
@@ -36,10 +37,12 @@ public class PublicDemoRateLimitFilter extends OncePerRequestFilter {
     PublicDemoRateLimitFilter(
             PublicDemoProperties properties,
             DemoUsageRepository usageRepository,
+            ClientAddressResolver clientAddressResolver,
             Clock clock,
             MeterRegistry meterRegistry) {
         this.properties = properties;
         this.usageRepository = usageRepository;
+        this.clientAddressResolver = clientAddressResolver;
         this.clock = clock;
         this.acceptedCounter = meterRegistry.counter("ledgerrail.demo.requests", "outcome", "accepted");
         this.minuteLimitCounter = meterRegistry.counter("ledgerrail.demo.requests", "outcome", "minute_limited");
@@ -57,7 +60,7 @@ public class PublicDemoRateLimitFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
         Instant now = clock.instant();
-        if (!acquireMinutePermit(clientKey(request), now)) {
+        if (!acquireMinutePermit(clientAddressResolver.resolve(request), now)) {
             minuteLimitCounter.increment();
             reject(response, 60, "The public demo request limit was reached. Try again in a minute.");
             return;
@@ -117,17 +120,6 @@ public class PublicDemoRateLimitFilter extends OncePerRequestFilter {
         }
         clientWindows.put(clientKey, new RequestWindow(minute, current.count() + 1));
         return true;
-    }
-
-    private String clientKey(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        String candidate = forwarded == null || forwarded.isBlank()
-                ? request.getRemoteAddr()
-                : forwarded.split(",", 2)[0].trim();
-        if (candidate == null || candidate.isBlank()) {
-            return "unknown";
-        }
-        return candidate.length() > 128 ? candidate.substring(0, 128) : candidate;
     }
 
     private void reject(HttpServletResponse response, long retryAfter, String detail) throws IOException {

@@ -21,6 +21,8 @@ services:
         value: "60"
       - key: PUBLIC_DEMO_WRITES_PER_DAY
         value: "500"
+      - key: PUBLIC_DEMO_TRUST_FORWARDED_FOR
+        value: "true"
       - key: KAFKA_ENABLED
         value: "false"
       - key: KAFKA_CONSUMER_ENABLED

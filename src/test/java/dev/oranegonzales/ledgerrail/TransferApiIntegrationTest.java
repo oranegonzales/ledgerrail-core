@@ -34,7 +34,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 class TransferApiIntegrationTest {
 
-    private static final String API_KEY = "test-api-key";
+    private static final String API_KEY = "test-portfolio-api-key-000000000001";
 
     @Container
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine");
@@ -81,6 +81,7 @@ class TransferApiIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isCreated())
+                .andExpect(header().string("Location", org.hamcrest.Matchers.startsWith("/api/v1/transfers/")))
                 .andExpect(header().string("Idempotency-Replayed", "false"))
                 .andExpect(jsonPath("$.currency").value("JMD"))
                 .andReturn();
@@ -174,6 +175,51 @@ class TransferApiIntegrationTest {
         mockMvc.perform(get("/api/v1/operations/reconciliation")
                         .header("X-Portfolio-Key", API_KEY))
                 .andExpect(status().isOk());
+
+        mockMvc.perform(get("/actuator/prometheus"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/actuator"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/actuator/health/liveness"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("X-RateLimit-Policy", "1000 requests/minute; 1 writes/day"))
+                .andExpect(jsonPath("$.status").value("UP"));
+
+        mockMvc.perform(get("/actuator/prometheus")
+                        .header("X-Portfolio-Key", API_KEY))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/v1/transfers/{id}/replay", UUID.randomUUID()))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void rejectsOversizedListsAndUnexpectedJsonFields() throws Exception {
+        mockMvc.perform(get("/api/v1/transfers")
+                        .header("X-Portfolio-Key", API_KEY)
+                        .param("accountId", UUID.randomUUID().toString())
+                        .param("limit", "101"))
+                .andExpect(status().isBadRequest());
+
+        String body = request(UUID.randomUUID(), "PAY_IN", "10.00", "JMD")
+                .replace("\n}", ",\n  \"unexpected\": \"value\"\n}");
+        mockMvc.perform(post("/api/v1/transfers")
+                        .header("X-Portfolio-Key", API_KEY)
+                        .header("Idempotency-Key", "strict-json-001")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+
+        String oversizedBody = "{\"padding\":\"" + "x".repeat(20_000) + "\"}";
+        mockMvc.perform(post("/api/v1/transfers")
+                        .header("X-Portfolio-Key", API_KEY)
+                        .header("Idempotency-Key", "oversized-json-001")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(oversizedBody))
+                .andExpect(status().is(413))
+                .andExpect(jsonPath("$.title").value("Request body too large"));
     }
 
     @Test
@@ -247,7 +293,9 @@ class TransferApiIntegrationTest {
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
                 .andExpect(forwardedUrl("index.html"))
-                .andExpect(header().string("X-Frame-Options", "DENY"));
+                .andExpect(header().string("X-Frame-Options", "DENY"))
+                .andExpect(header().string("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
+                .andExpect(header().string("Cross-Origin-Opener-Policy", "same-origin"));
 
         mockMvc.perform(get("/index.html"))
                 .andExpect(status().isOk())
@@ -258,7 +306,22 @@ class TransferApiIntegrationTest {
         mockMvc.perform(get("/api-info"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("LedgerRail Core"))
-                .andExpect(jsonPath("$.version").value("0.3.0"));
+                .andExpect(jsonPath("$.version").value("0.4.0"));
+
+        MvcResult safeCorrelation = mockMvc.perform(get("/api-info")
+                        .header("X-Correlation-Id", "portfolio-request-01"))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(safeCorrelation.getResponse().getHeader("X-Correlation-Id"))
+                .isEqualTo("portfolio-request-01");
+
+        MvcResult rejectedCorrelation = mockMvc.perform(get("/api-info")
+                        .header("X-Correlation-Id", "unsafe\tlog-value"))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(rejectedCorrelation.getResponse().getHeader("X-Correlation-Id"))
+                .matches("[0-9a-f-]{36}")
+                .isNotEqualTo("unsafe\tlog-value");
     }
 
     private String request(UUID accountId, String type, String amount, String currency) {

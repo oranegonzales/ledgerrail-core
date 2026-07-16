@@ -1,6 +1,8 @@
 package dev.oranegonzales.ledgerrail.transfer;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -14,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/api/v1/transfers")
@@ -31,10 +32,7 @@ public class TransferController {
             @RequestHeader("Idempotency-Key") String idempotencyKey,
             @Valid @RequestBody CreateTransferRequest request) {
         CreateTransferResult result = transferService.create(idempotencyKey, request);
-        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(result.transfer().id())
-                .toUri();
+        URI location = URI.create("/api/v1/transfers/" + result.transfer().id());
         HttpStatus status = result.replayed() ? HttpStatus.OK : HttpStatus.CREATED;
         return ResponseEntity.status(status)
                 .location(location)
@@ -48,8 +46,10 @@ public class TransferController {
     }
 
     @GetMapping
-    public List<TransferResponse> findByAccountId(@RequestParam UUID accountId) {
-        return transferService.findByAccountId(accountId);
+    public List<TransferResponse> findByAccountId(
+            @RequestParam UUID accountId,
+            @RequestParam(defaultValue = "50") @Min(1) @Max(100) int limit) {
+        return transferService.findByAccountId(accountId, limit);
     }
 
     @GetMapping("/{id}/ledger-entries")

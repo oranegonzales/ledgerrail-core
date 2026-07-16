@@ -56,13 +56,14 @@ class TransferRepository {
                 .findFirst();
     }
 
-    List<TransferRecord> findByAccountId(UUID accountId) {
+    List<TransferRecord> findByAccountId(UUID accountId, int limit) {
         String sql = """
                 SELECT * FROM transfers
                 WHERE account_id = :accountId
                 ORDER BY created_at DESC
+                LIMIT :limit
                 """;
-        return jdbc.query(sql, Map.of("accountId", accountId), this::map);
+        return jdbc.query(sql, Map.of("accountId", accountId, "limit", limit), this::map);
     }
 
     private TransferRecord map(ResultSet resultSet, int rowNumber) throws SQLException {

@@ -22,7 +22,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@SpringBootTest
+@SpringBootTest(properties = "ledgerrail.security.api-key=concurrency-test-api-key-00000000001")
 @Testcontainers
 class TransferConcurrencyIntegrationTest {
 

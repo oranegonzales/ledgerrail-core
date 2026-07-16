@@ -1,6 +1,7 @@
 # LedgerRail Core
 
 [![CI](https://github.com/oranegonzales/ledgerrail-core/actions/workflows/ci.yml/badge.svg)](https://github.com/oranegonzales/ledgerrail-core/actions/workflows/ci.yml)
+[![Security](https://github.com/oranegonzales/ledgerrail-core/actions/workflows/security.yml/badge.svg)](https://github.com/oranegonzales/ledgerrail-core/actions/workflows/security.yml)
 
 LedgerRail Core is a sandbox payment API built to demonstrate reliable Java backend engineering. It creates simulated pay-ins and pay-outs, records an atomic two-entry ledger, protects retries with idempotency keys, and writes integration events to a transactional outbox.
 
@@ -13,11 +14,11 @@ The project never moves real money and must only use synthetic data.
 - Health: [ledgerrail-core.onrender.com/actuator/health](https://ledgerrail-core.onrender.com/actuator/health)
 - Source: [github.com/oranegonzales/ledgerrail-core](https://github.com/oranegonzales/ledgerrail-core)
 
-The synthetic transfer demo is public and needs no account or API key. Database-backed daily write quotas and per-client request limits bound abuse. Recovery and operator endpoints still require a private portfolio key. The Render Free instance can take about one minute to wake after inactivity.
+The synthetic transfer demo is public and needs no account or API key. It sends decimal amounts without a floating-point conversion. Database-backed daily write quotas, per-client request limits, bounded request bodies, and bounded list responses constrain abuse. Recovery, metrics, and operator endpoints still require a private portfolio key. The Render Free instance can take about one minute to wake after inactivity.
 
 ## Current milestone
 
-Version 0.3.0 includes:
+Version 0.4.0 includes:
 
 - Java 21 and Spring Boot 3.5
 - Responsive same-origin web dashboard and API lab
@@ -29,12 +30,14 @@ Version 0.3.0 includes:
 - Producer acknowledgements, bounded retries, stale-claim recovery, and terminal failure state
 - RFC 9457-style API errors
 - Correlation IDs for request tracing
-- Prometheus metrics, health checks, and hardened browser response headers
+- Operator-protected Prometheus metrics, public health checks, and hardened browser response headers
 - PostgreSQL and Kafka Testcontainers integration tests
 - Safe anonymous demo access with persistent write quotas and burst limits
 - Concurrent idempotency verification across 24 simultaneous callers
 - Kafka reconciliation with event-ID de-duplication and mismatch records
 - Private failed-outbox inspection and operator replay
+- Strict JSON parsing, bounded account reads, trusted-proxy-aware rate limiting, and relative response locations
+- Response compression, Java virtual threads, CodeQL, dependency review, and Dependabot coverage
 - Multi-stage Docker build
 - Render and Neon free-tier deployment configuration
 
@@ -114,13 +117,13 @@ Transfer endpoints are public because all data is synthetic. Sending a valid `X-
 | --- | --- | --- |
 | `POST` | `/api/v1/transfers` | Create or replay a sandbox transfer |
 | `GET` | `/api/v1/transfers/{id}` | Retrieve a transfer |
-| `GET` | `/api/v1/transfers?accountId={accountId}` | List an account's transfers |
+| `GET` | `/api/v1/transfers?accountId={accountId}&limit={1..100}` | List up to 50 account transfers by default |
 | `GET` | `/api/v1/transfers/{id}/ledger-entries` | Retrieve debit and credit entries |
 | `GET` | `/api/v1/operations/reconciliation` | Inspect reconciliation results; operator key required |
 | `GET` | `/api/v1/operations/outbox/failed` | List failed outbox events; operator key required |
 | `POST` | `/api/v1/operations/outbox/{eventId}/replay` | Requeue a failed event; operator key required |
-| `GET` | `/actuator/health` | Read public health status |
-| `GET` | `/actuator/prometheus` | Read Prometheus metrics |
+| `GET` | `/actuator/health`, `/actuator/health/liveness`, `/actuator/health/readiness` | Read public health status |
+| `GET` | `/actuator/prometheus` | Read Prometheus metrics; operator key required |
 
 ## Verified live behavior
 
@@ -140,7 +143,7 @@ Java 21, Maven 3.6.3 or later, and Docker are required.
 mvn verify
 ```
 
-The integration tests start isolated PostgreSQL 17 and Kafka containers. They verify public quota enforcement, private operator protection, 24-way concurrent idempotency, ledger balance creation, failed-event replay, Kafka delivery, reconciliation, event-ID de-duplication, and mismatch detection.
+The integration tests start isolated PostgreSQL 17 and Kafka containers. They verify public quota enforcement, private operator and metrics protection, trusted proxy handling, strict inputs, 24-way concurrent idempotency, ledger balance creation, failed-event replay, Kafka delivery, reconciliation, event-ID de-duplication, and mismatch detection. CodeQL and dependency review run separately in the security workflow.
 
 ## Free public deployment
 

@@ -62,8 +62,8 @@ class TransferService {
                 .orElseThrow(() -> new TransferNotFoundException(id));
     }
 
-    List<TransferResponse> findByAccountId(UUID accountId) {
-        return transferRepository.findByAccountId(accountId).stream()
+    List<TransferResponse> findByAccountId(UUID accountId, int limit) {
+        return transferRepository.findByAccountId(accountId, limit).stream()
                 .map(TransferRecord::toResponse)
                 .toList();
     }

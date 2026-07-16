@@ -81,14 +81,14 @@
                 <form id="transfer-form" class="lab-card">
                     <label for="account-id">Synthetic account ID</label>
                     <div class="input-action">
-                        <input id="account-id" name="account-id" type="text" required spellcheck="false">
+                        <input id="account-id" name="account-id" type="text" minlength="36" maxlength="36" pattern="[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}" required spellcheck="false">
                         <button id="new-account" type="button" class="text-button">New ID</button>
                     </div>
 
                     <div class="field-grid">
                         <div><label for="transfer-type">Transfer type</label><select id="transfer-type" name="transfer-type"><option value="PAY_IN">Pay in</option><option value="PAY_OUT">Pay out</option></select></div>
-                        <div><label for="amount">Amount</label><input id="amount" name="amount" type="number" min="0.01" step="0.01" value="125.50" required></div>
-                        <div><label for="currency">Currency</label><input id="currency" name="currency" type="text" minlength="3" maxlength="3" value="JMD" required></div>
+                        <div><label for="amount">Amount</label><input id="amount" name="amount" type="text" inputmode="decimal" minlength="1" maxlength="20" pattern="(?:0\.(?:0[1-9]|[1-9][0-9]?)|[1-9][0-9]{0,16}(?:\.[0-9]{1,2})?)" value="125.50" required></div>
+                        <div><label for="currency">Currency</label><input id="currency" name="currency" type="text" minlength="3" maxlength="3" pattern="[A-Za-z]{3}" autocapitalize="characters" value="JMD" required></div>
                     </div>
 
                     <div class="lab-actions">

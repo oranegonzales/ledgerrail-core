@@ -13,7 +13,7 @@ public class HomeController {
         return Map.of(
                 "name", "LedgerRail Core",
                 "description", "A portfolio sandbox for reliable pay-in and pay-out processing",
-                "version", "0.3.0",
+                "version", "0.4.0",
                 "status", "sandbox",
                 "access", "Transfer endpoints are public and rate-limited; operator endpoints require X-Portfolio-Key",
                 "health", "/actuator/health",

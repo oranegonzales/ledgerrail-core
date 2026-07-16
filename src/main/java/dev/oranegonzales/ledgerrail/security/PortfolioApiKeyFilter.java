@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.Set;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -19,6 +21,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class PortfolioApiKeyFilter extends OncePerRequestFilter {
 
     private static final String HEADER = "X-Portfolio-Key";
+    private static final Set<String> PUBLIC_ACTUATOR_ROUTES = Set.of(
+            "/actuator/health",
+            "/actuator/health/liveness",
+            "/actuator/health/readiness",
+            "/actuator/info");
+    private static final Pattern PUBLIC_TRANSFER_ITEM = Pattern.compile(
+            "^/api/v1/transfers/[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-"
+                    + "[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}(?:/ledger-entries)?$");
     static final String PUBLIC_DEMO_REQUEST = PortfolioApiKeyFilter.class.getName() + ".publicDemoRequest";
     private final byte[] expectedApiKey;
     private final PublicDemoProperties publicDemoProperties;
@@ -26,13 +36,18 @@ public class PortfolioApiKeyFilter extends OncePerRequestFilter {
     public PortfolioApiKeyFilter(
             @Value("${ledgerrail.security.api-key}") String apiKey,
             PublicDemoProperties publicDemoProperties) {
+        if (apiKey.length() < 32 || apiKey.length() > 256) {
+            throw new IllegalStateException(
+                    "ledgerrail.security.api-key must contain between 32 and 256 characters");
+        }
         this.expectedApiKey = apiKey.getBytes(StandardCharsets.UTF_8);
         this.publicDemoProperties = publicDemoProperties;
     }
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().startsWith("/api/");
+        String path = request.getRequestURI();
+        return !path.startsWith("/api/") && !path.startsWith("/actuator");
     }
 
     @Override
@@ -51,6 +66,12 @@ public class PortfolioApiKeyFilter extends OncePerRequestFilter {
             return;
         }
 
+        if ("GET".equals(request.getMethod()) && PUBLIC_ACTUATOR_ROUTES.contains(request.getRequestURI())) {
+            request.setAttribute(PUBLIC_DEMO_REQUEST, Boolean.TRUE);
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         if (publicDemoProperties.enabled() && isPublicDemoRoute(request)) {
             request.setAttribute(PUBLIC_DEMO_REQUEST, Boolean.TRUE);
             filterChain.doFilter(request, response);
@@ -62,7 +83,13 @@ public class PortfolioApiKeyFilter extends OncePerRequestFilter {
 
     private boolean isPublicDemoRoute(HttpServletRequest request) {
         String path = request.getRequestURI();
-        return path.equals("/api/v1/transfers") || path.startsWith("/api/v1/transfers/");
+        if ("POST".equals(request.getMethod())) {
+            return path.equals("/api/v1/transfers");
+        }
+        if ("GET".equals(request.getMethod())) {
+            return path.equals("/api/v1/transfers") || PUBLIC_TRANSFER_ITEM.matcher(path).matches();
+        }
+        return false;
     }
 
     private void unauthorized(HttpServletResponse response, String detail) throws IOException {

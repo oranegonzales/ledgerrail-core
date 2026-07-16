@@ -12,6 +12,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 @RestControllerAdvice
 public class ApiProblemHandler {
@@ -52,6 +53,14 @@ public class ApiProblemHandler {
                 .toList();
         detail.setProperty("errors", errors);
         return ResponseEntity.badRequest().body(detail);
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    ResponseEntity<ProblemDetail> methodValidationFailure(HandlerMethodValidationException exception) {
+        return problem(
+                HttpStatus.BAD_REQUEST,
+                "Validation failed",
+                "One or more request parameters are invalid");
     }
 
     private Map<String, String> fieldError(FieldError error) {
